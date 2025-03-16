@@ -4,7 +4,14 @@ const path = require('path')
 const pinoHttp = require('pino-http')
 
 const logger = require('./utils/logger')('App')
+const appError = require('./utils/appError')('App')
 const creditPackageRouter = require('./routes/creditPackage')
+const skillRouter = require('./routes/skill')
+const userRouter = require('./routes/user')
+const adminRouter = require('./routes/admin')
+const coachRouter = require('./routes/coaches')
+const coursesRouter = require('./routes/courses')
+const uploadRouter = require('./routes/upload')
 
 const app = express()
 app.use(cors())
@@ -26,8 +33,25 @@ app.get('/healthcheck', (req, res) => {
   res.send('OK')
 })
 app.use('/api/credit-package', creditPackageRouter)
+app.use('/api/coaches/skill', skillRouter)
+app.use('/api/users', userRouter)
+app.use('/api/admin', adminRouter)
+app.use('/api/coaches', coachRouter)
+app.use('/api/courses', coursesRouter)
+app.use('/api/upload', uploadRouter)
+
+//404
+app.use((req, res, next) => {
+  res.status(404).json({
+    status: 'error',
+    message: "無此路由",
+  })
+  return
+});
+
 
 // eslint-disable-next-line no-unused-vars
+/*
 app.use((err, req, res, next) => {
   req.log.error(err)
   res.status(500).json({
@@ -35,5 +59,17 @@ app.use((err, req, res, next) => {
     message: '伺服器錯誤'
   })
 })
+*/
+
+// 放在所有路由之後，統一處理錯誤
+app.use((err, req, res, next) => {
+  req.log.error(err)
+  const statusCode = err.status || 500; // 400, 409, 500 ...
+  res.status(statusCode).json({
+    status: statusCode === 500 ? 'error' : 'failed',
+    message: err.message || '伺服器錯誤'
+  });
+})
+
 
 module.exports = app
